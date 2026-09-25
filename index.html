@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Surebet · calcolatore</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1E2A36">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Surebet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F2EE; --card:#FFFFFF; --ink:#1E2A36; --muted:#667380; --line:#D5D9D3;
+  --mark:#F3DC3C; --win:#1D7A4C; --loss:#B8391F; --field:#F7F8F5;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141A20; --card:#1C242C; --ink:#E6EAEE; --muted:#93A0AC; --line:#2E3944;
+    --mark:#E8D23A; --win:#4CC28A; --loss:#EE7A5F; --field:#232D36;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141A20; --card:#1C242C; --ink:#E6EAEE; --muted:#93A0AC; --line:#2E3944;
+  --mark:#E8D23A; --win:#4CC28A; --loss:#EE7A5F; --field:#232D36;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+h1{font:700 30px/1 "Barlow Condensed","Arial Narrow",sans-serif;margin:6px 0 4px;letter-spacing:.2px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:14px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:600 15px Barlow,sans-serif;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+section[hidden]{display:none}
+.slip{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.small{font-size:13px;color:var(--muted);display:block;margin-bottom:3px}
+input,select{font:500 16px Barlow,sans-serif;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--mark);outline-offset:1px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:8px 14px;font:600 14px Barlow,sans-serif;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.leg{display:grid;grid-template-columns:1.3fr .8fr .6fr auto;gap:6px;align-items:end;padding:10px 0;border-top:1px dashed var(--line)}
+.leg:first-of-type{border-top:0}
+.lock{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted);gap:2px;padding-bottom:6px}
+.lock input{width:20px;height:20px;accent-color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.verdict{margin-top:14px;border-radius:14px;padding:16px;background:var(--card);border:1px solid var(--line)}
+.big{font:700 52px/1 "Barlow Condensed","Arial Narrow",sans-serif;display:inline-block;padding:2px 8px;border-radius:6px}
+.big.ok{background:var(--mark);color:#1E2A36}
+.big.no{color:var(--loss)}
+.meta{color:var(--muted);font-size:14px;margin-top:6px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px}
+th{font-weight:600;color:var(--muted);font-size:13px;text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.pos{color:var(--win);font-weight:600}.neg{color:var(--loss);font-weight:600}
+.scroll{overflow-x:auto}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:10px;padding:10px 14px;font:600 15px Barlow,sans-serif;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.cmp input{padding:7px 6px;text-align:right}
+.cmp td:first-child input{text-align:left}
+.cmp td{padding:4px 3px}
+.best input{background:var(--mark);color:#1E2A36;border-color:var(--mark);font-weight:700}
+.del{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px}
+.note{font-size:13px;color:var(--muted);margin-top:14px}
+@media (max-width:400px){.leg{grid-template-columns:1fr .9fr auto}.leg .comm{display:none}}
+@media (prefers-reduced-motion:no-preference){.big{transition:background .2s}}
+
+#lock{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px}
+#lock .box{width:100%;max-width:320px;text-align:center}
+#lock input{text-align:center;font-size:24px;letter-spacing:6px;margin:14px 0}
+#lock .err{color:var(--loss);min-height:22px;font-size:14px}
+#lock code{display:block;word-break:break-all;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:10px;font-size:13px;text-align:left}
+</style>
+</head>
+<body>
+<div id="lock" hidden>
+  <div class="box">
+    <h1 id="lockTitle">Surebet</h1>
+    <p class="sub" id="lockSub">Inserisci il PIN</p>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" aria-label="PIN">
+    <button class="btn" id="pinOk" style="width:100%">Entra</button>
+    <div class="err" id="pinErr" aria-live="polite"></div>
+    <code id="pinHash" hidden></code>
+  </div>
+</div>
+<script>
+/* ── PROTEZIONE CON PIN ─────────────────────────────────────────────
+   Incolla qui sotto l'impronta del tuo PIN (vedi istruzioni).
+   Lasciata vuota = nessun blocco.                                     */
+const PIN_HASH = '';
+(async()=>{
+  const lock=document.getElementById('lock'), pin=document.getElementById('pin'),
+        err=document.getElementById('pinErr'), out=document.getElementById('pinHash');
+  const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('surebet|'+t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+  const genera=location.hash==='#genera';
+  let ok=false; try{ok=PIN_HASH && localStorage.getItem('sb_pin')===PIN_HASH}catch(e){}
+  if(!genera && (!PIN_HASH || ok)) return;
+  lock.hidden=false; pin.focus();
+  if(genera){
+    document.getElementById('lockTitle').textContent='Crea il PIN';
+    document.getElementById('lockSub').textContent='Scrivi il PIN che vuoi usare e copia l’impronta che compare.';
+    document.getElementById('pinOk').textContent='Genera impronta';
+  }
+  const go=async()=>{
+    const h=await sha(pin.value.trim());
+    if(genera){out.hidden=false;out.textContent=h;return}
+    if(h===PIN_HASH){try{localStorage.setItem('sb_pin',h)}catch(e){} lock.hidden=true; err.textContent='';}
+    else{err.textContent='PIN errato';pin.value='';}
+  };
+  document.getElementById('pinOk').onclick=go;
+  pin.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+})();
+</script>
+<div class="wrap">
+  <h1>Surebet</h1>
+  <p class="sub">Confronta le quote tra bookmaker e calcola quanto puntare su ogni esito.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="calc">Calcolatore</button>
+    <button role="tab" aria-selected="false" data-tab="cmp">Confronta</button>
+    <button role="tab" aria-selected="false" data-tab="lay">Punta + Banca</button>
+  </div>
+
+  <!-- CALCOLATORE -->
+  <section id="calc">
+    <div class="slip">
+      <div class="row" style="justify-content:space-between">
+        <div style="flex:1;max-width:230px"><label class="small" for="mkt">Mercato</label><select id="mkt"><option value="1x2">1 X 2</option><option value="uo">Under / Over</option><option value="ggng">Goal / No Goal</option><option value="pd">Pari / Dispari</option><option value="1x_2">1X contro 2</option><option value="x2_1">X2 contro 1</option><option value="12_x">12 contro X</option><option value="gen2">Altro (2 esiti)</option><option value="gen3">Altro (3 esiti)</option></select></div>
+        <span class="small" style="font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:8px">🔒 = puntata fissa</span>
+      </div>
+      <div id="legs" style="margin-top:8px"></div>
+      <div class="grid2">
+        <div><label class="small" for="total">Totale da puntare (€)</label><input id="total" type="number" inputmode="decimal" min="0" step="1" value="100"></div>
+        <div><label class="small" for="round">Arrotonda puntate a</label>
+          <select id="round"><option value="0.01">0,01 €</option><option value="0.1">0,10 €</option><option value="0.5">0,50 €</option><option value="1" selected>1 €</option><option value="5">5 €</option></select></div>
+      </div>
+    </div>
+
+    <div class="verdict" id="verdict" aria-live="polite"></div>
+  </section>
+
+  <!-- CONFRONTA -->
+  <section id="cmp" hidden>
+    <div class="slip">
+      <label class="small" for="evname">Partita</label>
+      <input id="evname" placeholder="es. Bari – Palermo">
+      <div class="row" style="margin-top:10px;justify-content:space-between">
+        <div style="flex:1;max-width:230px"><label class="small" for="cmpmkt">Mercato</label><select id="cmpmkt"><option value="1x2">1 X 2</option><option value="uo">Under / Over</option><option value="ggng">Goal / No Goal</option><option value="pd">Pari / Dispari</option><option value="1x_2">1X contro 2</option><option value="x2_1">X2 contro 1</option><option value="12_x">12 contro X</option><option value="gen2">Altro (2 esiti)</option><option value="gen3">Altro (3 esiti)</option></select></div>
+        <button class="btn ghost" id="addbook">+ Bookmaker</button>
+      </div>
+      <div class="scroll"><table class="cmp" id="cmptable"></table></div>
+      <div class="verdict" id="cmpverdict" style="margin-top:12px"></div>
+      <div class="row" style="margin-top:12px;gap:8px">
+        <button class="btn" id="tocalc">Usa nel calcolatore</button>
+        <button class="btn ghost" id="clear">Svuota quote</button>
+      </div>
+    </div>
+    <p class="note">Le quote migliori per ogni esito sono evidenziate. Nomi dei bookmaker e ultima tabella restano salvati su questo telefono.</p>
+  </section>
+
+  <!-- PUNTA + BANCA -->
+  <section id="lay" hidden>
+    <div class="slip">
+      <p class="meta" style="margin-top:0">Punti un esito sul bookmaker e lo banchi su Betfair Exchange: un’unica coppia di giocate, qualsiasi mercato.</p>
+      <div class="grid2">
+        <div><label class="small" for="lbBook">Bookmaker</label><input id="lbBook" value="PlanetWin365"></div>
+        <div><label class="small" for="lbOb">Quota punta</label><input id="lbOb" inputmode="decimal" placeholder="2,20"></div>
+        <div><label class="small" for="lbB">Puntata sul bookmaker (€)</label><input id="lbB" inputmode="decimal" value="50"></div>
+        <div><label class="small" for="lbOl">Quota banca Betfair</label><input id="lbOl" inputmode="decimal" placeholder="2,10"></div>
+        <div><label class="small" for="lbC">Commissione Betfair %</label><input id="lbC" inputmode="decimal" value="5"></div>
+        <div><label class="small" for="lbR">Arrotonda bancata a</label>
+          <select id="lbR"><option value="0.01" selected>0,01 €</option><option value="0.1">0,10 €</option><option value="1">1 €</option></select></div>
+      </div>
+    </div>
+    <div class="verdict" id="lbOut" aria-live="polite"></div>
+  </section>
+
+  <p class="note">La quota va ricontrollata sul sito un attimo prima di puntare: se una cambia, la surebet può sparire. Commissione = % trattenuta sulla vincita (es. exchange); lasciala a 0 per i bookmaker normali.</p>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const eur=v=>v.toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+const pct=v=>(v>=0?'+':'')+v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:NaN};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['calc','cmp','lay'].forEach(id=>$('#'+id).hidden=b.dataset.tab!==id);
+});
+
+/* ---------- calcolatore ---------- */
+const MARKETS={'1x2':['1','X','2'],uo:['Under','Over'],ggng:['Goal','No Goal'],pd:['Pari','Dispari'],'1x_2':['1X','2'],'x2_1':['X2','1'],'12_x':['12','X'],gen2:['Esito A','Esito B'],gen3:['Esito A','Esito B','Esito C']};
+let MKT='1x2'; const LABS=()=>MARKETS[MKT];
+let N=3, legs=[{},{},{}].map((_,i)=>({book:'',odd:'',comm:'0',lock:false}));
+
+function renderLegs(){
+  const labs=LABS();
+  $('#legs').innerHTML=legs.slice(0,N).map((l,i)=>`
+   <div class="leg" data-i="${i}">
+     <div><label class="small">${labs[i]} · bookmaker</label><input data-f="book" value="${esc(l.book)}" placeholder="Nome"></div>
+     <div><label class="small">Quota</label><input data-f="odd" type="text" inputmode="decimal" value="${l.odd}" placeholder="2,10"></div>
+     <div class="comm"><label class="small">Comm. %</label><input data-f="comm" type="text" inputmode="decimal" value="${l.comm}"></div>
+     <label class="lock">🔒<input type="checkbox" data-f="lock" ${l.lock?'checked':''} aria-label="Puntata fissa su ${labs[i]}"></label>
+   </div>`).join('');
+  $('#legs').querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const i=+e.target.closest('.leg').dataset.i, f=e.target.dataset.f;
+      if(f==='lock'){legs.forEach((l,j)=>l.lock=(j===i)&&e.target.checked);renderLegs();}
+      else legs[i][f]=e.target.value;
+      calc();
+    });
+  });
+  calc();
+}
+function setMkt(m){MKT=m;$('#mkt').value=m;N=MARKETS[m].length;legs.forEach((l,j)=>{if(j>=N)l.lock=false});renderLegs();}
+$('#mkt').addEventListener('change',e=>setMkt(e.target.value));
+['#total','#round'].forEach(s=>$(s).addEventListener('input',calc));
+
+function effOdd(o,c){return 1+(o-1)*(1-(isFinite(c)?c:0)/100)}
+
+function calc(){
+  const L=legs.slice(0,N), labs=LABS();
+  const odds=L.map(l=>num(l.odd)), comms=L.map(l=>num(l.comm)||0);
+  const v=$('#verdict');
+  if(odds.some(o=>!(o>1))){v.innerHTML='<div class="meta">Inserisci tutte le quote (maggiori di 1) per vedere il risultato.</div>';return}
+  const eff=odds.map((o,i)=>effOdd(o,comms[i]));
+  const S=eff.reduce((a,o)=>a+1/o,0);
+  const profitPct=(1/S-1)*100;
+  const step=num($('#round').value)||0.01;
+  const lockI=L.findIndex(l=>l.lock);
+  let stakes;
+  if(lockI>=0){
+    // il campo "totale" diventa la puntata fissa su quell'esito
+    const fixed=num($('#total').value)||0;
+    const R=fixed*eff[lockI];
+    stakes=eff.map((o,i)=>i===lockI?fixed:R/o);
+  }else{
+    const T=num($('#total').value)||0;
+    stakes=eff.map(o=>T*(1/o)/S);
+  }
+  stakes=stakes.map((s,i)=>(i===lockI)?s:Math.round(s/step)*step);
+  const tot=stakes.reduce((a,b)=>a+b,0);
+  const rows=stakes.map((s,i)=>{const ret=s*eff[i],p=ret-tot;return{s,ret,p}});
+  const minP=Math.min(...rows.map(r=>r.p));
+  const ok=profitPct>0;
+  v.innerHTML=`
+    <div class="big ${ok?'ok':'no'}">${pct(profitPct)}</div>
+    <div class="meta">${ok?'Surebet: guadagni qualunque sia il risultato.':'Nessuna surebet: la somma delle probabilità implicite supera il 100%.'}
+      Margine combinato ${(S*100).toLocaleString('it-IT',{maximumFractionDigits:2})}% · puntata totale ${eur(tot)}${lockI>=0?` (fissa su ${labs[lockI]})`:''}</div>
+    <div class="scroll"><table>
+      <tr><th>Esito</th><th>Quota</th><th>Punta</th><th>Se vince</th><th>Profitto</th></tr>
+      ${rows.map((r,i)=>`<tr><td>${labs[i]}${L[i].book?' · '+esc(L[i].book):''}</td><td>${odds[i].toFixed(2)}</td><td><b>${eur(r.s)}</b></td><td>${eur(r.ret)}</td><td class="${r.p>=0?'pos':'neg'}">${eur(r.p)}</td></tr>`).join('')}
+    </table></div>
+    <div class="meta">Profitto minimo garantito dopo arrotondamento: <b class="${minP>=0?'pos':'neg'}">${eur(minP)}</b></div>`;
+  $('#total').previousElementSibling.textContent=lockI>=0?`Puntata fissa su ${labs[lockI]} (€)`:'Totale da puntare (€)';
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---------- comparatore ---------- */
+let C=store.get('sb_cmp',{mkt:'1x2',name:'',books:[{name:'Snai',o:['','','']},{name:'Sisal',o:['','','']},{name:'Eurobet',o:['','','']},{name:'Bet365',o:['','','']}]});
+function saveC(){store.set('sb_cmp',C)}
+function cmpLabels(){if(!MARKETS[C.mkt])C.mkt='1x2';return MARKETS[C.mkt]}
+function renderCmp(){
+  $('#evname').value=C.name||'';
+  $('#cmpmkt').value=C.mkt||'1x2';
+  const labs=cmpLabels();
+  const t=$('#cmptable');
+  t.innerHTML=`<tr><th>Bookmaker</th>${labs.map(l=>`<th>${l}</th>`).join('')}<th></th></tr>`+
+    C.books.map((b,i)=>`<tr data-i="${i}"><td><input data-k="name" value="${esc(b.name)}" placeholder="Nome"></td>${labs.map((_,j)=>`<td data-j="${j}"><input data-k="o" data-j="${j}" inputmode="decimal" value="${b.o[j]||''}" placeholder="–"></td>`).join('')}<td><button class="del" aria-label="Rimuovi ${esc(b.name)}">×</button></td></tr>`).join('');
+  t.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{
+    const i=+e.target.closest('tr').dataset.i;
+    if(e.target.dataset.k==='name')C.books[i].name=e.target.value; else C.books[i].o[+e.target.dataset.j]=e.target.value;
+    saveC(); cmpCalc();
+  }));
+  t.querySelectorAll('.del').forEach(b=>b.onclick=e=>{C.books.splice(+e.target.closest('tr').dataset.i,1);saveC();renderCmp()});
+  cmpCalc();
+}
+function bestPerOutcome(){
+  const labs=cmpLabels();
+  return labs.map((_,j)=>{let best=null;C.books.forEach((b,i)=>{const o=num(b.o[j]);if(o>1&&(!best||o>best.o))best={o,i,name:b.name}});return best});
+}
+function cmpCalc(){
+  const best=bestPerOutcome(), labs=cmpLabels();
+  document.querySelectorAll('#cmptable td[data-j]').forEach(td=>td.classList.remove('best'));
+  best.forEach((b,j)=>{if(b){const td=document.querySelector(`#cmptable tr[data-i="${b.i}"] td[data-j="${j}"]`);td&&td.classList.add('best')}});
+  const v=$('#cmpverdict');
+  if(best.some(b=>!b)){v.innerHTML='<div class="meta">Serve almeno una quota per ogni esito.</div>';return}
+  const S=best.reduce((a,b)=>a+1/b.o,0), p=(1/S-1)*100;
+  v.innerHTML=`<div class="big ${p>0?'ok':'no'}">${pct(p)}</div>
+   <div class="meta">${p>0?'Combinando le quote migliori c’è una surebet.':'Anche con le quote migliori non c’è surebet.'}<br>
+   ${best.map((b,j)=>`${labs[j]} ${b.o.toFixed(2)} su ${esc(b.name||'?')}`).join(' · ')}</div>`;
+}
+$('#evname').addEventListener('input',e=>{C.name=e.target.value;saveC()});
+$('#cmpmkt').addEventListener('change',e=>{C.mkt=e.target.value;saveC();renderCmp()});
+$('#addbook').onclick=()=>{C.books.push({name:'',o:['','','']});saveC();renderCmp()};
+$('#clear').onclick=()=>{C.books.forEach(b=>b.o=['','','']);saveC();renderCmp()};
+$('#tocalc').onclick=()=>{
+  const best=bestPerOutcome(); if(best.some(b=>!b))return;
+  best.forEach((b,j)=>{legs[j]={book:b.name,odd:String(b.o),comm:'0',lock:false}});
+  setMkt(C.mkt); document.querySelector('.tabs button[data-tab="calc"]').click();
+};
+
+/* ---------- punta + banca ---------- */
+const LB=store.get('sb_lay',{book:'PlanetWin365',B:'50',C:'5'});
+$('#lbBook').value=LB.book;$('#lbB').value=LB.B;$('#lbC').value=LB.C;
+function layCalc(){
+  store.set('sb_lay',{book:$('#lbBook').value,B:$('#lbB').value,C:$('#lbC').value});
+  const Ob=num($('#lbOb').value),Ol=num($('#lbOl').value),B=num($('#lbB').value),c=(num($('#lbC').value)||0)/100,step=num($('#lbR').value)||0.01;
+  const o=$('#lbOut');
+  if(!(Ob>1&&Ol>1&&B>0)){o.innerHTML='<div class="meta">Inserisci quota punta, quota banca e puntata.</div>';return}
+  let L=B*Ob/(Ol-c); L=Math.round(L/step)*step;
+  const liab=L*(Ol-1);
+  const pWin=B*(Ob-1)-liab;          // vince l'esito: incassi dal bookmaker, paghi la responsabilità
+  const pLose=L*(1-c)-B;             // perde l'esito: perdi la puntata, incassi la bancata meno commissione
+  const minP=Math.min(pWin,pLose), roi=minP/(B+liab)*100;
+  const ok=minP>0, bk=esc($('#lbBook').value||'Bookmaker');
+  o.innerHTML=`<div class="big ${ok?'ok':'no'}">${eur(minP)}</div>
+   <div class="meta">${ok?'Guadagno garantito in entrambi i casi.':'Nessun arbitraggio: questa è la perdita minima (utile per coprire un bonus o chiudere una giocata).'} Rendimento sul capitale impegnato ${pct(roi)}</div>
+   <div class="scroll"><table>
+    <tr><th>Giocata</th><th>Quota</th><th>Importo</th></tr>
+    <tr><td>Punta su ${bk}</td><td>${Ob.toFixed(2)}</td><td><b>${eur(B)}</b></td></tr>
+    <tr><td>Banca su Betfair</td><td>${Ol.toFixed(2)}</td><td><b>${eur(L)}</b></td></tr>
+    <tr><td>Responsabilità da avere sul conto</td><td></td><td>${eur(liab)}</td></tr>
+   </table><table>
+    <tr><th>Se l’esito…</th><th>Profitto</th></tr>
+    <tr><td>vince</td><td class="${pWin>=0?'pos':'neg'}">${eur(pWin)}</td></tr>
+    <tr><td>non vince</td><td class="${pLose>=0?'pos':'neg'}">${eur(pLose)}</td></tr>
+   </table></div>`;
+}
+['#lbBook','#lbOb','#lbB','#lbOl','#lbC','#lbR'].forEach(s=>$(s).addEventListener('input',layCalc));
+
+renderLegs(); renderCmp(); layCalc();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>
