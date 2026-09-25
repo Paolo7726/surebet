@@ -77,6 +77,7 @@ td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-var
 @media (prefers-reduced-motion:no-preference){.big{transition:background .2s}}
 
 #lock{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px}
+#lock[hidden],#lock [hidden]{display:none!important}
 #lock .box{width:100%;max-width:320px;text-align:center}
 #lock input{text-align:center;font-size:24px;letter-spacing:6px;margin:14px 0}
 #lock .err{color:var(--loss);min-height:22px;font-size:14px}
@@ -98,11 +99,12 @@ td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-var
 /* ── PROTEZIONE CON PIN ─────────────────────────────────────────────
    Incolla qui sotto l'impronta del tuo PIN (vedi istruzioni).
    Lasciata vuota = nessun blocco.                                     */
-const PIN_HASH = '';
+const PIN_HASH = 'b7ea555b0354db7f49385549d3b714ad3d1ba967a77f8e53ff57546b1d9840ac';
 (async()=>{
   const lock=document.getElementById('lock'), pin=document.getElementById('pin'),
         err=document.getElementById('pinErr'), out=document.getElementById('pinHash');
   const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('surebet|'+t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+  window.addEventListener('hashchange',()=>location.reload());
   const genera=location.hash==='#genera';
   let ok=false; try{ok=PIN_HASH && localStorage.getItem('sb_pin')===PIN_HASH}catch(e){}
   if(!genera && (!PIN_HASH || ok)) return;

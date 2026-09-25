@@ -1,5 +1,5 @@
 // Cache per uso offline. Cambia VERSIONE quando aggiorni index.html.
-const VERSIONE = 'surebet-v2';
+const VERSIONE = 'surebet-v3';
 const FILE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
