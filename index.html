@@ -125,6 +125,15 @@ td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-var
 .gbs{display:grid;gap:6px}
 .gb{background:var(--field);border-radius:10px;padding:8px;text-align:center;border:1px solid transparent}
 .gb.mine{border-color:rgba(61,220,151,.45)}
+a.gb{color:inherit;text-decoration:none;cursor:pointer;position:relative;transition:transform .1s}
+a.gb:active{transform:scale(.97)}
+a.gb:hover{border-color:var(--mark)}
+.gb .fatto{position:absolute;top:4px;right:7px;display:none;color:var(--mark);font:700 13px sans-serif}
+.gb.fatta{border-color:var(--mark);background:var(--glow)}.gb.fatta .fatto{display:block}
+.gb .apri{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.sb.dubbia{opacity:.6}
+.sb .avviso{font-size:12px;color:var(--loss)}
+#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);border:1px solid var(--mark);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:14px;max-width:92vw;z-index:40;box-shadow:0 8px 30px rgba(0,0,0,.4);display:none}
 .gb small{display:block;font-size:12px;color:var(--muted)}
 .gb b{display:block;font:700 18px "JetBrains Mono",monospace}
 .gb span{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -217,6 +226,7 @@ const PIN_HASH = 'b7ea555b0354db7f49385549d3b714ad3d1ba967a77f8e53ff57546b1d9840
       <button aria-pressed="false" data-m="Pari/Dispari">Pari/Dispari</button>
     </div>
     <div class="cards" id="cards"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
     <h3>Bookmaker più presenti nelle surebet</h3>
     <div class="stato" id="stSub"></div>
     <div class="bars" id="bars"></div>
@@ -475,6 +485,13 @@ async function carica(){
   renderLive();
 }
 function attive(){const now=new Date();return (DATI.surebet||[]).filter(s=>new Date(s.kickoff)>now)}
+const sbId=s=>[s.evento,s.mercato,s.linea||'',s.kickoff].join('|');
+const fatte=()=>{try{return JSON.parse(localStorage.getItem('sb_fatte')||'{}')}catch(e){return {}}};
+function segnaFatta(id,book){const f=fatte();f[id+'#'+book]=Date.now();
+  for(const k in f){if(Date.now()-f[k]>2*86400000)delete f[k]}               // pulizia dopo 2 giorni
+  try{localStorage.setItem('sb_fatte',JSON.stringify(f))}catch(e){}}
+function linkBook(b){return (DATI.link&&DATI.link[b])||('https://www.google.com/search?q='+encodeURIComponent(b+' scommesse'))}
+let toastT;function toast(t){const e=$('#toast');e.innerHTML=t;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',6000)}
 function renderLive(){
   if(!DATI) return;
   const min=Math.max(0,Math.round((Date.now()-new Date(DATI.generato))/60000));
@@ -484,28 +501,46 @@ function renderLive(){
   else $('#stato').innerHTML=`<i class="${cls}"></i>Ultimo giro ${quando(DATI.generato)} · ${eta} · ${DATI.partite||0} partite analizzate`;
   const all=attive();
   $('#k1').textContent=all.length;
-  $('#k2').textContent=all.length?(all.reduce((a,s)=>a+s.pct,0)/all.length).toFixed(2).replace('.',',')+'%':'–';
-  $('#k3').textContent=all.filter(s=>s.giocabile).length;
+  const buone=all.filter(s=>!s.incoerente);
+  $('#k2').textContent=buone.length?(buone.reduce((a,s)=>a+s.pct,0)/buone.length).toFixed(2).replace('.',',')+'%':'–';
+  $('#k3').textContent=buone.filter(s=>s.giocabile).length;
   $('#k4').textContent=DATI.bookmaker||'–';
   const miei=new Set(DATI.miei||[]);
-  let L=all.filter(s=>(FT==='tutte'||(FT==='miei'&&s.giocabile)||s.tipo===FT)&&(!FM||s.mercato===FM||s.mercato.startsWith(FM.split('/')[0].replace('Under','U/O'))));
-  const topPct=Math.max(...L.map(s=>s.pct),0);
+  let L=all.filter(s=>(FT==='tutte'||(FT==='miei'&&s.giocabile&&!s.incoerente)||s.tipo===FT)&&(!FM||s.mercato===FM||s.mercato.startsWith(FM.split('/')[0].replace('Under','U/O'))));
+  L.sort((a,b)=>(a.incoerente-b.incoerente)||(b.pct-a.pct));
+  const topPct=Math.max(...L.filter(s=>!s.incoerente).map(s=>s.pct),0);
+  const F=fatte();
   $('#cards').innerHTML=L.length?L.map((s,i)=>{
-    const badges=[s.pct===topPct?'<span class="badge best">Migliore</span>':'',
-      s.giocabile?'<span class="badge mine">★ Giocabile</span>':'',
+    const id=sbId(s), casa=(s.evento||'').split(' - ')[0].trim();
+    const nFatte=s.gambe.filter(g=>F[id+'#'+g.book+g.esito]).length;
+    const top=!s.incoerente&&s.pct===topPct;
+    const badges=[top?'<span class="badge best">Migliore</span>':'',
+      s.incoerente?'<span class="badge warn">? Dati incoerenti</span>':'',
+      s.giocabile&&!s.incoerente?'<span class="badge mine">★ Giocabile</span>':'',
       s.tipo==='betfair'?'<span class="badge lay">Punta+Banca</span>':'',
-      s.sospetta?'<span class="badge warn">⚠ Sospetta</span>':''].join(' ');
+      s.sospetta&&!s.incoerente?'<span class="badge warn">⚠ Sospetta</span>':''].join(' ');
     const agg=Math.max(...s.gambe.map(g=>g.agg_min||0));
-    return `<article class="sb ${s.pct===topPct?'top':''}">
+    return `<article class="sb ${top?'top':''} ${s.incoerente?'dubbia':''}">
       <div class="t1"><span class="tag">${esc(s.lega||'')} · ${quando(s.kickoff)}</span><span>${badges}</span></div>
       <div class="t2"><div><div class="ev">${esc(s.evento)}</div><div class="mk">${esc(s.mercato)}${s.linea?' '+String(s.linea).replace('.',','):''}</div></div>
         <div class="roi"><small>ROI</small><b>${String(s.pct.toFixed(2)).replace('.',',')}%</b></div></div>
       <div class="gbs" style="grid-template-columns:repeat(${s.gambe.length},1fr)">${s.gambe.map(g=>`
-        <div class="gb ${miei.has(g.book)||g.book==='betfair'?'mine':''}"><small>${esc(g.esito)}</small><b>${fmtQ(g.quota)}</b><span>${esc(g.book)}</span><em>${eur(g.punta)}</em></div>`).join('')}</div>
-      <div class="t3"><span>Punta ${eur(s.totale)} → <b class="pos">+${eur(s.profitto)}</b>${agg?` · quote di ${agg} min prima`:''}</span>
+        <a class="gb ${miei.has(g.book)||g.book==='betfair'?'mine':''} ${F[id+'#'+g.book+g.esito]?'fatta':''}" href="${esc(linkBook(g.book))}" target="_blank" rel="noopener"
+           data-id="${esc(id)}" data-bk="${esc(g.book)}" data-es="${esc(g.esito)}" data-q="${fmtQ(g.quota)}" data-p="${eur(g.punta)}" data-casa="${esc(casa)}">
+          <i class="fatto">✓</i><small>${esc(g.esito)}</small><b>${fmtQ(g.quota)}</b><span>${esc(g.book)}</span><em>${eur(g.punta)}</em><span class="apri">tocca per aprire ↗</span></a>`).join('')}</div>
+      ${s.incoerente?'<div class="avviso">Più surebet sulla stessa partita: probabile errore di un bookmaker o partita diversa (giovanili/prima squadra). Verifica prima di giocare.</div>':''}
+      <div class="t3"><span>Punta ${eur(s.totale)} → <b class="pos">+${eur(s.profitto)}</b>${agg?` · quote di ${agg} min prima`:''}${nFatte?` · <b style="color:var(--mark)">aperte ${nFatte}/${s.gambe.length}</b>`:''}</span>
         <button data-i="${i}">Apri nel calcolatore</button></div>
     </article>`}).join(''):'<div class="vuoto">Nessuna surebet con questi filtri nell’ultimo giro.</div>';
   $('#cards').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>apriSb(L[+b.dataset.i]));
+  $('#cards').querySelectorAll('a.gb').forEach(a=>a.addEventListener('click',()=>{
+    const d=a.dataset;
+    if(navigator.clipboard&&d.casa) navigator.clipboard.writeText(d.casa).catch(()=>{});
+    segnaFatta(d.id,d.bk+d.es);
+    a.classList.add('fatta');
+    toast(`Copiato <b>“${d.casa}”</b>: incollalo nella ricerca di <b>${d.bk}</b>.<br>Punta <b>${d.p}</b> su <b>${d.es}</b> a quota <b>${d.q}</b>`);
+    setTimeout(renderLive,400);
+  }));
   const S=DATI.storico||{};
   $('#stSub').innerHTML=S.totale?`<i></i>${S.totale} surebet in ${S.giorni} giorni · ${S.giocabili} giocabili con i tuoi conti`:'<i></i>Lo storico si riempie giro dopo giro.';
   const mx=Math.max(...(S.bookmaker||[]).map(b=>b.n),1);
