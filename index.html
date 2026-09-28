@@ -534,7 +534,7 @@ function renderLive(){
            data-id="${esc(id)}" data-bk="${esc(g.book)}" data-es="${esc(g.esito)}" data-q="${fmtQ(g.quota)}" data-p="${eur(g.punta)}" data-casa="${esc(casa)}">
           <i class="fatto">✓</i><small>${esc(g.esito)}</small><b>${fmtQ(g.quota)}</b><span>${esc(g.book)}</span><em>${eur(g.punta)}</em><span class="apri">tocca per aprire ↗</span></a>`).join('')}</div>
       ${s.incoerente?'<div class="avviso">Più surebet sulla stessa partita: probabile errore di un bookmaker o partita diversa (giovanili/prima squadra). Verifica prima di giocare.</div>':''}
-      <div class="t3"><span>Punta ${eur(s.totale)} → <b class="pos">+${eur(s.profitto)}</b>${agg?` · quote di ${agg} min prima`:''}${nFatte?` · <b style="color:var(--mark)">aperte ${nFatte}/${s.gambe.length}</b>`:''}</span>
+      <div class="t3"><span>Punta ${eur(s.totale)} → <b class="${s.profitto>=0?'pos':'neg'}">${s.profitto>=0?'+':''}${eur(s.profitto)}</b>${agg?` · quote di ${agg} min prima`:''}${nFatte?` · <b style="color:var(--mark)">aperte ${nFatte}/${s.gambe.length}</b>`:''}</span>
         <button data-i="${i}">Apri nel calcolatore</button></div>
     </article>`}).join(''):'<div class="vuoto">Nessuna surebet con questi filtri nell’ultimo giro.</div>';
   $('#cards').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>apriSb(L[+b.dataset.i]));
