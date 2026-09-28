@@ -224,6 +224,7 @@ const PIN_HASH = 'b7ea555b0354db7f49385549d3b714ad3d1ba967a77f8e53ff57546b1d9840
       <button aria-pressed="false" data-m="Under/Over">Under/Over</button>
       <button aria-pressed="false" data-m="Goal/No Goal">Goal/No Goal</button>
       <button aria-pressed="false" data-m="Pari/Dispari">Pari/Dispari</button>
+      <button aria-pressed="false" data-m="altri">Altri mercati</button>
     </div>
     <div class="cards" id="cards"></div>
     <div id="toast" role="status" aria-live="polite"></div>
@@ -449,7 +450,11 @@ renderLegs(); renderCmp(); layCalc();
 /* ---------- apertura da link Telegram (?m=..&q=..&b=.. oppure ?lay=1&ob=..&ol=..) ---------- */
 function applyParams(P){
   if(!P.toString()) return false;
-  const m=P.get('m'), q=(P.get('q')||'').split(',').filter(Boolean), b=(P.get('b')||'').split(',');
+  let m=P.get('m'); const q=(P.get('q')||'').split(',').filter(Boolean), b=(P.get('b')||'').split(',');
+  if(P.get('l')&&q.length){                        // etichette dal link (angoli, doppia chance + 1X2...)
+    MARKETS.link=P.get('l').split(',').slice(0,q.length); m='link';
+    if(!$('#mkt').querySelector('option[value="link"]')){const o=document.createElement('option');o.value='link';o.textContent='Dal link';$('#mkt').appendChild(o)}
+  }
   if(q.length && MARKETS[m]){
     q.forEach((x,i)=>{legs[i]={book:b[i]||'',odd:x.replace('.',','),comm:'0',lock:false}});
     if(P.get('t')) $('#total').value=P.get('t');
@@ -506,7 +511,7 @@ function renderLive(){
   $('#k3').textContent=buone.filter(s=>s.giocabile).length;
   $('#k4').textContent=DATI.bookmaker||'–';
   const miei=new Set(DATI.miei||[]);
-  let L=all.filter(s=>(FT==='tutte'||(FT==='miei'&&s.giocabile&&!s.incoerente)||s.tipo===FT)&&(!FM||s.mercato===FM||s.mercato.startsWith(FM.split('/')[0].replace('Under','U/O'))));
+  let L=all.filter(s=>(FT==='tutte'||(FT==='miei'&&s.giocabile&&!s.incoerente)||s.tipo===FT)&&(!FM||(FM==='altri'?!/^(1X2|Under\/Over|U\/O|Goal\/No Goal|Pari\/Dispari)/.test(s.mercato):(s.mercato===FM||s.mercato.startsWith(FM)||s.mercato.startsWith(FM.split('/')[0].replace('Under','U/O'))))));
   L.sort((a,b)=>(a.incoerente-b.incoerente)||(b.pct-a.pct));
   const topPct=Math.max(...L.filter(s=>!s.incoerente).map(s=>s.pct),0);
   const F=fatte();
@@ -549,7 +554,8 @@ function renderLive(){
 function apriSb(s){
   const P=new URLSearchParams();
   if(s.tipo==='betfair'){P.set('lay','1');P.set('ob',s.gambe[0].quota);P.set('ol',s.gambe[1].quota);P.set('bk',s.gambe[0].book);P.set('s',s.gambe[0].punta);P.set('c',s.commissione||5);}
-  else{P.set('m',s.codice);P.set('q',s.gambe.map(g=>g.quota).join(','));P.set('b',s.gambe.map(g=>g.book).join(','));P.set('t',s.totale);}
+  else{P.set('m',s.codice);P.set('q',s.gambe.map(g=>g.quota).join(','));P.set('b',s.gambe.map(g=>g.book).join(','));P.set('t',s.totale);
+    if(s.etichette)P.set('l',s.etichette.join(','));}
   applyParams(P);
   window.scrollTo({top:0,behavior:'smooth'});
 }
