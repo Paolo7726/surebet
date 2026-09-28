@@ -489,6 +489,7 @@ async function carica(){
   }
   renderLive();
 }
+const roi=s=>(s.pct_capitale!=null?s.pct_capitale:s.pct);   // Punta+Banca: % sul capitale impegnato
 function attive(){const now=new Date();return (DATI.surebet||[]).filter(s=>new Date(s.kickoff)>now)}
 const sbId=s=>[s.evento,s.mercato,s.linea||'',s.kickoff].join('|');
 const fatte=()=>{try{return JSON.parse(localStorage.getItem('sb_fatte')||'{}')}catch(e){return {}}};
@@ -507,18 +508,18 @@ function renderLive(){
   const all=attive();
   $('#k1').textContent=all.length;
   const buone=all.filter(s=>!s.incoerente);
-  $('#k2').textContent=buone.length?(buone.reduce((a,s)=>a+s.pct,0)/buone.length).toFixed(2).replace('.',',')+'%':'–';
+  $('#k2').textContent=buone.length?(buone.reduce((a,s)=>a+roi(s),0)/buone.length).toFixed(2).replace('.',',')+'%':'–';
   $('#k3').textContent=buone.filter(s=>s.giocabile).length;
   $('#k4').textContent=DATI.bookmaker||'–';
   const miei=new Set(DATI.miei||[]);
   let L=all.filter(s=>(FT==='tutte'||(FT==='miei'&&s.giocabile&&!s.incoerente)||s.tipo===FT)&&(!FM||(FM==='altri'?!/^(1X2|Under\/Over|U\/O|Goal\/No Goal|Pari\/Dispari)/.test(s.mercato):(s.mercato===FM||s.mercato.startsWith(FM)||s.mercato.startsWith(FM.split('/')[0].replace('Under','U/O'))))));
-  L.sort((a,b)=>(a.incoerente-b.incoerente)||(b.pct-a.pct));
-  const topPct=Math.max(...L.filter(s=>!s.incoerente).map(s=>s.pct),0);
+  L.sort((a,b)=>(a.incoerente-b.incoerente)||(roi(b)-roi(a)));
+  const topPct=Math.max(...L.filter(s=>!s.incoerente).map(roi),0);
   const F=fatte();
   $('#cards').innerHTML=L.length?L.map((s,i)=>{
     const id=sbId(s), casa=(s.evento||'').split(' - ')[0].trim();
     const nFatte=s.gambe.filter(g=>F[id+'#'+g.book+g.esito]).length;
-    const top=!s.incoerente&&s.pct===topPct;
+    const top=!s.incoerente&&roi(s)===topPct;
     const badges=[top?'<span class="badge best">Migliore</span>':'',
       s.incoerente?'<span class="badge warn">? Dati incoerenti</span>':'',
       s.giocabile&&!s.incoerente?'<span class="badge mine">★ Giocabile</span>':'',
@@ -528,7 +529,7 @@ function renderLive(){
     return `<article class="sb ${top?'top':''} ${s.incoerente?'dubbia':''}">
       <div class="t1"><span class="tag">${esc(s.lega||'')} · ${quando(s.kickoff)}</span><span>${badges}</span></div>
       <div class="t2"><div><div class="ev">${esc(s.evento)}</div><div class="mk">${esc(s.mercato)}${s.linea?' '+String(s.linea).replace('.',','):''}</div></div>
-        <div class="roi"><small>ROI</small><b>${String(s.pct.toFixed(2)).replace('.',',')}%</b></div></div>
+        <div class="roi"><small>ROI${s.tipo==='betfair'?' sul capitale':''}</small><b>${roi(s).toFixed(2).replace('.',',')}%</b>${s.tipo==='betfair'?`<small>${s.pct.toFixed(2).replace('.',',')}% sulla puntata</small>`:''}</div></div>
       <div class="gbs" style="grid-template-columns:repeat(${s.gambe.length},1fr)">${s.gambe.map(g=>`
         <a class="gb ${miei.has(g.book)||g.book==='betfair'?'mine':''} ${F[id+'#'+g.book+g.esito]?'fatta':''}" href="${esc(linkBook(g.book))}" target="_blank" rel="noopener"
            data-id="${esc(id)}" data-bk="${esc(g.book)}" data-es="${esc(g.esito)}" data-q="${fmtQ(g.quota)}" data-p="${eur(g.punta)}" data-casa="${esc(casa)}">
