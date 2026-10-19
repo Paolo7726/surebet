@@ -76,12 +76,9 @@ td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-var
 @media (max-width:400px){.leg{grid-template-columns:1fr .9fr auto}.leg .comm{display:none}}
 @media (prefers-reduced-motion:no-preference){.big{transition:background .2s}}
 
-#lock{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:24px}
-#lock[hidden],#lock [hidden]{display:none!important}
-#lock .box{width:100%;max-width:320px;text-align:center}
-#lock input{text-align:center;font-size:24px;letter-spacing:6px;margin:14px 0}
-#lock .err{color:var(--loss);min-height:22px;font-size:14px}
-#lock code{display:block;word-break:break-all;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:10px;font-size:13px;text-align:left}
+#sblocca .err{color:var(--loss);min-height:22px;font-size:14px;margin-top:6px}
+#sblocca label.ric{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:10px 0}
+#sblocca label.ric input{width:20px;height:20px;accent-color:var(--mark)}
 
 .mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
 .wrap{max-width:1120px}
@@ -151,45 +148,6 @@ h3{font:700 15px "JetBrains Mono",monospace;margin:22px 0 4px}
 </style>
 </head>
 <body>
-<div id="lock" hidden>
-  <div class="box">
-    <h1 id="lockTitle">Surebet</h1>
-    <p class="sub" id="lockSub">Inserisci il PIN</p>
-    <input id="pin" type="password" inputmode="numeric" autocomplete="off" aria-label="PIN">
-    <button class="btn" id="pinOk" style="width:100%">Entra</button>
-    <div class="err" id="pinErr" aria-live="polite"></div>
-    <code id="pinHash" hidden></code>
-  </div>
-</div>
-<script>
-/* ── PROTEZIONE CON PIN ─────────────────────────────────────────────
-   Incolla qui sotto l'impronta del tuo PIN (vedi istruzioni).
-   Lasciata vuota = nessun blocco.                                     */
-const PIN_HASH = 'b7ea555b0354db7f49385549d3b714ad3d1ba967a77f8e53ff57546b1d9840ac';
-(async()=>{
-  const lock=document.getElementById('lock'), pin=document.getElementById('pin'),
-        err=document.getElementById('pinErr'), out=document.getElementById('pinHash');
-  const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('surebet|'+t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
-  window.addEventListener('hashchange',()=>location.reload());
-  const genera=location.hash==='#genera';
-  let ok=false; try{ok=PIN_HASH && localStorage.getItem('sb_pin')===PIN_HASH}catch(e){}
-  if(!genera && (!PIN_HASH || ok)) return;
-  lock.hidden=false; pin.focus();
-  if(genera){
-    document.getElementById('lockTitle').textContent='Crea il PIN';
-    document.getElementById('lockSub').textContent='Scrivi il PIN che vuoi usare e copia l’impronta che compare.';
-    document.getElementById('pinOk').textContent='Genera impronta';
-  }
-  const go=async()=>{
-    const h=await sha(pin.value.trim());
-    if(genera){out.hidden=false;out.textContent=h;return}
-    if(h===PIN_HASH){try{localStorage.setItem('sb_pin',h)}catch(e){} lock.hidden=true; err.textContent='';}
-    else{err.textContent='PIN errato';pin.value='';}
-  };
-  document.getElementById('pinOk').onclick=go;
-  pin.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
-})();
-</script>
 <div class="wrap">
   <div class="brand"><span class="dot" aria-hidden="true"></span><h1>surebet</h1></div>
 
@@ -204,8 +162,17 @@ const PIN_HASH = 'b7ea555b0354db7f49385549d3b714ad3d1ba967a77f8e53ff57546b1d9840
   <section id="live">
     <div class="dhead">
       <div><h2>Surebet finder</h2><div class="stato" id="stato"><i></i>Caricamento…</div></div>
-      <div class="row" style="gap:6px"><a class="btn" id="nuovoGiro" href="https://t.me/surebet_ausonia_bot?start=giro" target="_blank" rel="noopener" style="text-decoration:none">▶ Cerca adesso</a><button class="btn ghost" id="refresh">↻ Aggiorna</button></div>
+      <div class="row" style="gap:6px"><a class="btn" id="nuovoGiro" href="https://t.me/surebet_ausonia_bot?start=giro" target="_blank" rel="noopener" style="text-decoration:none">▶ Cerca adesso</a><button class="btn ghost" id="refresh">↻ Aggiorna</button><button class="btn ghost" id="blocca" hidden title="Dimentica la password su questo telefono">🔒 Blocca</button></div>
     </div>
+    <div id="sblocca" class="slip narrow" hidden>
+      <h3 style="margin-top:0">Dati protetti</h3>
+      <p class="meta" style="margin-top:0">Le surebet sono cifrate: inserisci la password della dashboard (DASHBOARD_PASSWORD nel file .env del PC).</p>
+      <input id="pw" type="password" autocomplete="current-password" aria-label="Password dashboard">
+      <label class="ric"><input type="checkbox" id="ricorda" checked> Ricorda su questo telefono</label>
+      <button class="btn" id="pwOk" style="width:100%">Sblocca</button>
+      <div class="err" id="pwErr" aria-live="polite"></div>
+    </div>
+    <div id="liveBody">
     <div class="kpis">
       <div class="kpi"><small>Attive</small><b id="k1">–</b></div>
       <div class="kpi"><small>ROI medio</small><b id="k2">–</b></div>
@@ -232,6 +199,7 @@ const PIN_HASH = 'b7ea555b0354db7f49385549d3b714ad3d1ba967a77f8e53ff57546b1d9840
     <div class="stato" id="stSub"></div>
     <div class="bars" id="bars"></div>
     <p class="note">Le surebet durano spesso pochi minuti: prima di giocare ricontrolla sempre le quote sui siti. In verde i tuoi bookmaker.</p>
+    </div>
   </section>
 
   <!-- CALCOLATORE -->
@@ -475,19 +443,71 @@ if(applyParams(new URLSearchParams(location.search))){try{history.replaceState(n
 let DATI=null, FT='tutte', FM='';
 const fmtQ=q=>Number(q).toFixed(2).replace('.',',');
 const quando=s=>{const d=new Date(s);return d.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})};
+/* ---------- dati cifrati (stessa procedura di scanner_api.py: PBKDF2-SHA256 + HMAC-SHA256) ---------- */
+try{localStorage.removeItem('sb_pin')}catch(e){}                       // vecchio PIN: non serve più
+const b64d=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const b64e=u=>btoa(String.fromCharCode(...u));
+let CHIAVE=null, PACCO=null;                                           // CHIAVE = {sale, k: Uint8Array(64)}
+function chiaveSalvata(){try{const c=JSON.parse(localStorage.getItem('sb_chiave')||sessionStorage.getItem('sb_chiave')||'null');return c&&{sale:c.sale,k:b64d(c.k)}}catch(e){return null}}
+function salvaChiave(c,sempre){const v=JSON.stringify({sale:c.sale,k:b64e(c.k)});try{(sempre?localStorage:sessionStorage).setItem('sb_chiave',v)}catch(e){}}
+function dimentica(){CHIAVE=null;try{localStorage.removeItem('sb_chiave');sessionStorage.removeItem('sb_chiave')}catch(e){}}
+async function deriva(pw,p){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const k=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:b64d(p.sale),iterations:p.giri},base,512));
+  return {sale:p.sale,k};
+}
+async function decifra(p,c){
+  const hk=raw=>crypto.subtle.importKey('raw',raw,{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
+  const kEnc=await hk(c.k.slice(0,32)), kMac=await hk(c.k.slice(32));
+  const nonce=b64d(p.nonce), dati=b64d(p.dati), pre=new TextEncoder().encode('surebet-v1');
+  const msg=new Uint8Array(pre.length+nonce.length+dati.length); msg.set(pre); msg.set(nonce,pre.length); msg.set(dati,pre.length+nonce.length);
+  if(!await crypto.subtle.verify('HMAC',kMac,b64d(p.tag),msg)) throw new Error('chiave');
+  const blocchi=await Promise.all(Array.from({length:Math.ceil(dati.length/32)},(_,i)=>{
+    const m=new Uint8Array(20); m.set(nonce); new DataView(m.buffer).setUint32(16,i); return crypto.subtle.sign('HMAC',kEnc,m)}));
+  const out=new Uint8Array(dati.length);
+  blocchi.forEach((b,i)=>{const u=new Uint8Array(b);for(let j=0;j<32&&i*32+j<dati.length;j++)out[i*32+j]=dati[i*32+j]^u[j]});
+  return JSON.parse(new TextDecoder().decode(out));
+}
+function mostraBlocco(on,msg){
+  $('#sblocca').hidden=!on; $('#liveBody').hidden=on; $('#blocca').hidden=on||!PACCO;
+  $('#pwErr').textContent=msg||'';
+  if(on){$('#stato').innerHTML='<i class="mid"></i>Dati protetti da password';setTimeout(()=>$('#pw').focus(),50)}
+}
+async function sblocca(){
+  const pw=$('#pw').value; if(!pw||!PACCO) return;
+  $('#pwOk').disabled=true; $('#pwErr').textContent='Verifica…';
+  try{
+    const c=await deriva(pw,PACCO);
+    DATI=await decifra(PACCO,c); CHIAVE=c; salvaChiave(c,$('#ricorda').checked);
+    $('#pw').value=''; mostraBlocco(false); renderLive();
+  }catch(e){$('#pwErr').textContent='Password errata'; $('#pw').select();}
+  $('#pwOk').disabled=false;
+}
+$('#pwOk').onclick=sblocca;
+$('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')sblocca()});
+$('#blocca').onclick=()=>{dimentica();DATI=null;mostraBlocco(true)};
+
 async function carica(){
   const st=$('#stato');
   st.innerHTML='<i></i>Caricamento…';
+  let j;
   try{
     const r=await fetch('dati.json?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error(r.status);
-    DATI=await r.json();
+    j=await r.json();
   }catch(e){
     st.innerHTML='<i class="old"></i>Dati non disponibili: lo scanner non ha ancora pubblicato dati.json';
     $('#cards').innerHTML='<div class="vuoto">Nessun dato. Avvia lo scanner sul PC.</div>';
     return;
   }
-  renderLive();
+  if(!j.cifrato){PACCO=null;DATI=j;mostraBlocco(false);renderLive();return}   // vecchio formato in chiaro
+  PACCO=j;
+  if(!crypto.subtle){mostraBlocco(true,'Questo browser non supporta la decifratura (serve https).');return}
+  const c=(CHIAVE&&CHIAVE.sale===j.sale)?CHIAVE:chiaveSalvata();
+  if(c&&c.sale===j.sale){
+    try{DATI=await decifra(j,c);CHIAVE=c;mostraBlocco(false);renderLive();return}catch(e){dimentica()}
+  }
+  DATI=null; mostraBlocco(true, c?'La password è cambiata: inseriscila di nuovo.':'');
 }
 const roi=s=>(s.pct_capitale!=null?s.pct_capitale:s.pct);   // Punta+Banca: % sul capitale impegnato
 function attive(){const now=new Date();return (DATI.surebet||[]).filter(s=>new Date(s.kickoff)>now)}
@@ -534,6 +554,7 @@ function renderLive(){
         <a class="gb ${miei.has(g.book)||g.book==='betfair'?'mine':''} ${F[id+'#'+g.book+g.esito]?'fatta':''}" href="${esc(linkBook(g.book))}" target="_blank" rel="noopener"
            data-id="${esc(id)}" data-bk="${esc(g.book)}" data-es="${esc(g.esito)}" data-q="${fmtQ(g.quota)}" data-p="${eur(g.punta)}" data-casa="${esc(casa)}">
           <i class="fatto">✓</i><small>${esc(g.esito)}</small><b>${fmtQ(g.quota)}</b><span>${esc(g.book)}</span><em>${eur(g.punta)}</em><span class="apri">tocca per aprire ↗</span></a>`).join('')}</div>
+      ${s.tipo==='betfair'?liqRiga(s):''}
       ${s.incoerente?'<div class="avviso">Più surebet sulla stessa partita: probabile errore di un bookmaker o partita diversa (giovanili/prima squadra). Verifica prima di giocare.</div>':''}
       <div class="t3"><span>Punta ${eur(s.totale)} → <b class="${s.profitto>=0?'pos':'neg'}">${s.profitto>=0?'+':''}${eur(s.profitto)}</b>${agg?` · quote di ${agg} min prima`:''}${nFatte?` · <b style="color:var(--mark)">aperte ${nFatte}/${s.gambe.length}</b>`:''}</span>
         <button data-i="${i}">Apri nel calcolatore</button></div>
@@ -551,6 +572,17 @@ function renderLive(){
   $('#stSub').innerHTML=S.totale?`<i></i>${S.totale} surebet in ${S.giorni} giorni · ${S.giocabili} giocabili con i tuoi conti`:'<i></i>Lo storico si riempie giro dopo giro.';
   const mx=Math.max(...(S.bookmaker||[]).map(b=>b.n),1);
   $('#bars').innerHTML=(S.bookmaker||[]).map(b=>`<div class="bar ${miei.has(b.book)?'mine':''}"><span>${esc(b.book)}</span><div><i style="width:${b.n/mx*100}%"></i></div><span class="mono">${b.n} · ${String(b.media).replace('.',',')}%</span></div>`).join('');
+}
+/* Punta+Banca: quanto si può davvero bancare su Betfair (dati vecchi: liquidità solo nella gamba "Banca") */
+function liqRiga(s){
+  const banca=s.gambe[1]||{}, liq=s.liquidita!=null?s.liquidita:banca.liquidita;
+  if(liq==null) return '';
+  const resp=s.resp!=null?s.resp:banca.resp;
+  const corta=s.limitata||(banca.punta>liq);
+  let t=`Bancabili su Betfair <b>${eur(liq)}</b>${resp!=null?` · responsabilità ${eur(resp)}`:''}`;
+  if(s.limitata) t+=`<br><b>Puntata ridotta da ${eur(s.punta_base)} a ${eur(s.totale)}</b> per stare nella liquidità`;
+  else if(corta) t+=`<br><b>Liquidità insufficiente</b>: servirebbe bancare ${eur(banca.punta)}, profitto reale molto più basso`;
+  return `<div class="${corta?'avviso':'mk'}">${t}</div>`;
 }
 function apriSb(s){
   const P=new URLSearchParams();
